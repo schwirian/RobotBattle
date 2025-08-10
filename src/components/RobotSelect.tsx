@@ -1,6 +1,6 @@
-import { defaultRobots } from '@/game/core'
+import { defaultRobots, RobotId } from '@/game/core'
 
-export function RobotSelect({ onSelect }: { onSelect: (id: string) => void }) {
+export function RobotSelect({ onSelect }: { onSelect: (id: RobotId) => void }) {
   return (
     <div className="grid grid-cols-3 gap-3">
       {defaultRobots.map(r => (
