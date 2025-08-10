@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Simple arena background */
+.arena-bg {
+  background: radial-gradient(
+    1200px 600px at 50% 120%,
+    #0a0f1e 40%,
+    #05070f 100%
+  );
+}
+
+.spark {
+  box-shadow: 0 0 10px 2px rgba(255, 180, 0, 0.8);
+}
