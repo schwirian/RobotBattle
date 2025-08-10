@@ -142,18 +142,23 @@ function handleCombat(g: GameState, dt: number) {
   const a = g.p1
   const b = g.p2
 
-  function tryHit(attacker: Robot, defender: Robot, kind: 'light' | 'heavy' | 'special') {
-    const reach = kind === 'light' ? 40 : kind === 'heavy' ? 60 : 90
-    const damage = kind === 'light' ? 6 : kind === 'heavy' ? 12 : 18
-    const knock = kind === 'light' ? 180 : kind === 'heavy' ? 260 : 320
+  function tryHit(attacker: Robot, defender: Robot, kind: 'light' | 'heavy' | 'special', defenderInput: InputState) {
+    const sp = kind === 'special' ? getSpecialStats(attacker.id) : null
+    const reach = kind === 'light' ? 40 : kind === 'heavy' ? 60 : (sp?.reach ?? 90)
+    let damage = kind === 'light' ? 6 : kind === 'heavy' ? 12 : (sp?.damage ?? 18)
+    let knock = kind === 'light' ? 180 : kind === 'heavy' ? 260 : (sp?.knock ?? 320)
 
     const dir = attacker.facing === 'right' ? 1 : -1
     const handX = attacker.x + dir * reach
     const distance = Math.abs(handX - defender.x)
 
     if (distance < 40 && attacker.cooldown <= 0) {
-      defender.hp = Math.max(0, defender.hp - damage)
-      defender.vx += dir * knock
+      // blocking reduces damage and knock
+      const blocked = defenderInput.block
+      const dmg = blocked ? Math.ceil(damage * 0.4) : damage
+      const kn = blocked ? Math.ceil(knock * 0.5) : knock
+      defender.hp = Math.max(0, defender.hp - dmg)
+      defender.vx += dir * kn
       defender.vy = -100
       defender.onGround = false
       attacker.cooldown = kind === 'light' ? 0.25 : kind === 'heavy' ? 0.45 : 0.8
@@ -176,13 +181,13 @@ function handleCombat(g: GameState, dt: number) {
   const ip1 = g.input.p1
   const ip2 = g.input.p2
 
-  if (ip1.light) tryHit(a, b, 'light')
-  if (ip1.heavy) tryHit(a, b, 'heavy')
-  if (ip1.special && a.power >= 50) { tryHit(a, b, 'special'); a.power -= 50 }
+  if (ip1.light) tryHit(a, b, 'light', ip2)
+  if (ip1.heavy) tryHit(a, b, 'heavy', ip2)
+  if (ip1.special && a.power >= 50) { tryHit(a, b, 'special', ip2); a.power -= 50 }
 
-  if (ip2.light) tryHit(b, a, 'light')
-  if (ip2.heavy) tryHit(b, a, 'heavy')
-  if (ip2.special && b.power >= 50) { tryHit(b, a, 'special'); b.power -= 50 }
+  if (ip2.light) tryHit(b, a, 'light', ip1)
+  if (ip2.heavy) tryHit(b, a, 'heavy', ip1)
+  if (ip2.special && b.power >= 50) { tryHit(b, a, 'special', ip1); b.power -= 50 }
 }
 
 export const defaultRobots = [
@@ -193,4 +198,20 @@ export const defaultRobots = [
 
 export function getRobotPreset(id: string) {
   return defaultRobots.find(r => r.id === id) ?? defaultRobots[0]
+}
+
+function getSpecialStats(robotId: string): { reach: number; damage: number; knock: number } {
+  switch (robotId) {
+    case 'alpha':
+      // Dash Lunge: fast, long reach, moderate damage
+      return { reach: 110, damage: 14, knock: 300 }
+    case 'bravo':
+      // Rocket Uppercut: short reach, high damage/knock
+      return { reach: 80, damage: 22, knock: 380 }
+    case 'gamma':
+      // EMP Burst: medium reach, lower damage but strong knock
+      return { reach: 95, damage: 16, knock: 360 }
+    default:
+      return { reach: 90, damage: 18, knock: 320 }
+  }
 }
